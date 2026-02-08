@@ -23,7 +23,7 @@ export default async function EditRidePage({
 	redirect(d ? `/schedule?date=${d}` : "/schedule");
   }
 
-  //const dateStr = searchParams.date ?? undefined;
+
 
   async function action(formData: FormData) {
     "use server";
