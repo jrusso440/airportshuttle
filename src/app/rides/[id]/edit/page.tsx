@@ -10,40 +10,38 @@ export default async function EditRidePage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { date?: string };
+  searchParams: { date?: string; err?: string };
 }) {
+  // Ensure user is logged in (dispatch/admin can edit rides)
+  const user = await requireUser(["ADMIN", "DISPATCHER"]);
 
+  const dateStr = searchParams.date ?? undefined;
 
   const ride = await prisma.ride.findUnique({
     where: { id: params.id },
   });
 
   if (!ride) {
-	const d = searchParams.date;
-	redirect(d ? `/schedule?date=${d}` : "/schedule");
+    redirect(dateStr ? `/schedule?date=${dateStr}` : "/schedule");
   }
-
-	
-const rideSafe = ride;
 
   async function action(formData: FormData) {
     "use server";
     await updateRide(params.id, formData);
   }
 
-async function delAction() {
-  "use server";
+  async function delAction() {
+    "use server";
 
-  const r = await prisma.ride.findUnique({ where: { id: params.id } });
-  if (!r) {
-    // if it was deleted already, just bounce back
-    const d0 = searchParams.date;
-    redirect(d0 ? `/schedule?date=${d0}` : "/schedule");
+    // Re-fetch inside the action so TS knows it's non-null here
+    const r = await prisma.ride.findUnique({ where: { id: params.id } });
+    if (!r) {
+      redirect(dateStr ? `/schedule?date=${dateStr}` : "/schedule");
+    }
+
+    const d = dateStr ?? new Date(r.date).toISOString().slice(0, 10);
+    await deleteRide(params.id, d);
   }
-
-  const d = searchParams.date ?? new Date(r.date).toISOString().slice(0, 10);
-  await deleteRide(params.id, d);
-}
 
   return (
     <div>
@@ -58,7 +56,10 @@ async function delAction() {
         <RideForm mode="edit" ride={ride} action={action} dateStr={dateStr} />
 
         <form action={delAction} className="no-print">
-          <button className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50" type="submit">
+          <button
+            className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm text-red-700 hover:bg-red-50"
+            type="submit"
+          >
             Delete ride
           </button>
         </form>
