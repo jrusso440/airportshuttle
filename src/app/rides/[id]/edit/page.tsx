@@ -23,7 +23,8 @@ export default async function EditRidePage({
 	redirect(d ? `/schedule?date=${d}` : "/schedule");
   }
 
-
+	
+const rideSafe = ride;
 
   async function action(formData: FormData) {
     "use server";
