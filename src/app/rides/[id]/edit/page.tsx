@@ -12,14 +12,15 @@ export default async function EditRidePage({
   params: { id: string };
   searchParams: { date?: string };
 }) {
-  const dateStr = searchParams.date ?? undefined;
+
 
   const ride = await prisma.ride.findUnique({
     where: { id: params.id },
   });
 
   if (!ride) {
-    redirect(`/schedule${dateStr ? `?date=${dateStr}` : ""}`);
+	const d = searchParams.date;
+	redirect(d ? `/schedule?date=${d}` : "/schedule");
   }
 
   const dateStr = searchParams.date ?? undefined;
