@@ -14,6 +14,7 @@ export default async function EditRidePage({
 }) {
   // Ensure user is logged in (dispatch/admin can edit rides)
   const user = await requireUser(["ADMIN", "DISPATCHER"]);
+	if (!user) redirect("/login");
 
   const dateStr = searchParams.date ?? undefined;
 
