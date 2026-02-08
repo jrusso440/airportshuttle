@@ -32,7 +32,7 @@ export default async function EditRidePage({
 
   async function delAction() {
     "use server";
-    const d = dateStr ?? new Date(ride.date).toISOString().slice(0, 10);
+    const d = searchParams.date ?? new Date(ride.date).toISOString().slice(0, 10);
     await deleteRide(params.id, d);
   }
 
