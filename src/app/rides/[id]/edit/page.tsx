@@ -16,7 +16,11 @@ export default async function EditRidePage({
   if (!user) redirect("/");
 
   const ride = await prisma.ride.findUnique({ where: { id: params.id } });
-  if (!ride) redirect("/schedule");
+if (!ride) {
+  // You can redirect, or show a friendly message.
+  // Redirect is simplest for dispatch UI:
+  redirect(`/schedule${dateStr ? `?date=${dateStr}` : ""}`);
+}
 
   const dateStr = searchParams.date ?? undefined;
 
