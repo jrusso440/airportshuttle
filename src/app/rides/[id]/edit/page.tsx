@@ -31,11 +31,19 @@ const rideSafe = ride;
     await updateRide(params.id, formData);
   }
 
-  async function delAction() {
-    "use server";
-    const d = searchParams.date ?? new Date(ride.date).toISOString().slice(0, 10);
-    await deleteRide(params.id, d);
+async function delAction() {
+  "use server";
+
+  const r = await prisma.ride.findUnique({ where: { id: params.id } });
+  if (!r) {
+    // if it was deleted already, just bounce back
+    const d0 = searchParams.date;
+    redirect(d0 ? `/schedule?date=${d0}` : "/schedule");
   }
+
+  const d = searchParams.date ?? new Date(r.date).toISOString().slice(0, 10);
+  await deleteRide(params.id, d);
+}
 
   return (
     <div>
