@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+/* Print helpers */
+@media print {
+  .no-print { display: none !important; }
+  .print-break { page-break-after: always; }
+  a[href]:after { content: ""; }
+}
