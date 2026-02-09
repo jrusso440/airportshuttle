@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/session";
 import { parseYMD, ymd, formatTime } from "@/lib/date";
 import { redirect } from "next/navigation";
 
