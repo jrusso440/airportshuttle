@@ -2,12 +2,21 @@ import { cookies } from "next/headers";
 import crypto from "crypto";
 import { prisma } from "./db";
 import type { User } from "@prisma/client";
+import { redirect } from "next/navigation";
 
 const COOKIE_NAME = "as_session";
 
 function secret(): string {
   const s = process.env.APP_SECRET;
-  if (!s) throw new Error("APP_SECRET is not set");
+
+  // During Vercel/Next build, route modules can be imported for analysis.
+  // Don't throw at import/build-time; use a placeholder so builds succeed.
+  if (!s) {
+    if (process.env.NEXT_PHASE) return "BUILD_PLACEHOLDER_SECRET_CHANGE_ME";
+    // Runtime: require a real secret
+    throw new Error("APP_SECRET is not set");
+  }
+
   return s;
 }
 
@@ -65,13 +74,12 @@ export function getSession(): SessionUser | null {
   }
 }
 
-export async function requireUser(roles?: Array<"ADMIN"|"DISPATCHER"|"DRIVER">) {
+export async function requireUser(roles?: Array<"ADMIN" | "DISPATCHER" | "DRIVER">) {
   const sess = getSession();
-  if (!sess) return null;
-  if (roles && !roles.includes(sess.role)) return null;
+  if (!sess) redirect("/login");
+  if (roles && !roles.includes(sess.role)) redirect("/login");
   return sess;
 }
-
 export async function requireDriverUser() {
   const sess = getSession();
   if (!sess) return null;
