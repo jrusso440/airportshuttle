@@ -8,7 +8,8 @@ function normalizeRole(role: string): "ADMIN" | "DISPATCHER" | "DRIVER" {
 
 export async function POST(req: Request) {
   // Dynamic import prevents Prisma/session modules from being evaluated during build analysis
-  const { getUserByEmail, setSession } = await import("@/lib/auth");
+  const { getUserByEmail } = await import("@/lib/auth");
+  const { setSession } = await import("@/lib/session");
 
   const form = await req.formData();
   const email = String(form.get("email") ?? "").trim().toLowerCase();
