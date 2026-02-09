@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireDriverUser } from "@/lib/auth";
+import { requireDriverUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Card, Button } from "@/components/ui";
