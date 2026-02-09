@@ -9,11 +9,12 @@ const COOKIE_NAME = "as_session";
 function secret(): string {
   const s = process.env.APP_SECRET;
 
-  // During Vercel/Next build, route modules can be imported for analysis.
-  // Don't throw at import/build-time; use a placeholder so builds succeed.
+  // During Vercel build, route modules are imported for analysis.
+  // Do NOT crash the build if env vars aren't present yet.
   if (!s) {
-    if (process.env.NEXT_PHASE) return "BUILD_PLACEHOLDER_SECRET_CHANGE_ME";
-    // Runtime: require a real secret
+    if (process.env.VERCEL === "1" || process.env.NEXT_PHASE) {
+      return "BUILD_PLACEHOLDER_SECRET_SET_APP_SECRET";
+    }
     throw new Error("APP_SECRET is not set");
   }
 
