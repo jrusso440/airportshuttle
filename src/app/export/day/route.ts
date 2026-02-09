@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/session";
 import { parseYMD, ymd } from "@/lib/date";
 
 function csvEscape(v: any): string {
