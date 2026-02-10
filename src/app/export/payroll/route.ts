@@ -27,39 +27,30 @@ export async function GET(req: Request) {
       // status: "COMPLETED",
     },
     orderBy: [{ pickupTime: "asc" }],
-    select: {
-      id: true,
-      pickupTime: true,
-      passengerName: true,
-      pickupLocation: true,
-      dropoffLocation: true,
-      // safest: driverId exists even if there's no relation field
-      driverId: true,
-      // if you have payout fields:
-      // estimatedPriceCents: true,
-    },
+select: {
+  id: true,
+  pickupTime: true,
+  passengerName: true,
+  pickupLocation: true,
+  dropoffLocation: true,
+  status: true,
+},
   });
 
   // Payroll summary by driverId (fallback)
-  const byDriver = new Map<string, { rides: number }>();
+ const header = ["id", "pickupTime", "passengerName", "pickupLocation", "dropoffLocation", "status"];
 
-  for (const r of rides) {
-    const key = r.driverId ?? "UNASSIGNED";
-    const cur = byDriver.get(key) ?? { rides: 0 };
-    cur.rides += 1;
-    byDriver.set(key, cur);
-  }
+const rows = rides.map((r) => [
+  r.id,
+  new Date(r.pickupTime).toISOString(),
+  r.passengerName ?? "",
+  r.pickupLocation ?? "",
+  r.dropoffLocation ?? "",
+  String(r.status ?? ""),
+]);
 
-  const header = ["driverId", "rides", "periodStart", "periodEnd"];
-  const rows = Array.from(byDriver.entries()).map(([driverId, v]) => [
-    driverId,
-    String(v.rides),
-    start,
-    end,
-  ]);
-
-  const csv =
-    [header.join(","), ...rows.map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))].join("\n");
+const csv =
+  [header.join(","), ...rows.map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))].join("\n");
 
   return new NextResponse(csv, {
     status: 200,
