@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireUser, requireDriverUser } from "@/lib/auth";
+import { requireUser, requireDriverUser } from "@/lib/session";
 import { parseYMD, ymd, formatTime } from "@/lib/date";
 import { redirect } from "next/navigation";
 
