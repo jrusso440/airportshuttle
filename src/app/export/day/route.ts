@@ -20,38 +20,34 @@ export async function GET(req: Request) {
   const rides = await prisma.ride.findMany({
     where: { date },
     orderBy: [{ pickupTime: "asc" }],
-    include: { driver: true },
   });
 
   // Simple CSV export (works for printing/opening in Excel)
-  const header = [
-    "id",
-    "date",
-    "pickupTime",
-    "pickupLocation",
-    "dropoffLocation",
-    "passengerName",
-    "passengerPhone",
-    "passengerEmail",
-    "partySize",
-    "status",
-    "driver",
-  ];
+ const header = [
+  "id",
+  "date",
+  "pickupTime",
+  "pickupLocation",
+  "dropoffLocation",
+  "passengerName",
+  "passengerPhone",
+  "passengerEmail",
+  "partySize",
+  "status",
+];
 
-  const rows = rides.map((r) => [
-    r.id,
-    dateStr,
-    new Date(r.pickupTime).toISOString(),
-    (r.pickupLocation ?? "").replaceAll('"', '""'),
-    (r.dropoffLocation ?? "").replaceAll('"', '""'),
-    (r.passengerName ?? "").replaceAll('"', '""'),
-    (r.passengerPhone ?? "").replaceAll('"', '""'),
-    (r.passengerEmail ?? "").replaceAll('"', '""'),
-    String(r.partySize ?? ""),
-    String(r.status ?? ""),
-    (r.driver?.name ?? "").replaceAll('"', '""'),
-  ]);
-
+const rows = rides.map((r) => [
+  r.id,
+  dateStr,
+  new Date(r.pickupTime).toISOString(),
+  (r.pickupLocation ?? "").replaceAll('"', '""'),
+  (r.dropoffLocation ?? "").replaceAll('"', '""'),
+  (r.passengerName ?? "").replaceAll('"', '""'),
+  (r.passengerPhone ?? "").replaceAll('"', '""'),
+  (r.passengerEmail ?? "").replaceAll('"', '""'),
+  String(r.partySize ?? ""),
+  String(r.status ?? ""),
+]);
   const csv = [header.join(","), ...rows.map((row) => row.map((v) => `"${v}"`).join(","))].join("\n");
 
   return new NextResponse(csv, {
