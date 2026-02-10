@@ -1,55 +1,71 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
-
-function csvEscape(v: any): string {
-  const s = String(v ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export async function GET(req: Request) {
-  const user = await requireUser(["ADMIN", "DISPATCHER"]);
-  if (!user) return NextResponse.redirect(new URL("/login", req.url));
+  // Dynamic imports prevent build-time crashes
+  const { prisma } = await import("@/lib/db");
+  const { requireUser } = await import("@/lib/session");
 
-  const url = new URL(req.url);
-  const from = url.searchParams.get("from");
-  const to = url.searchParams.get("to");
-  if (!from || !to) {
-    return new NextResponse("Missing from/to (YYYY-MM-DD)", { status: 400 });
+  await requireUser(["ADMIN", "DISPATCHER"]);
+
+  const { searchParams } = new URL(req.url);
+  const start = searchParams.get("start"); // YYYY-MM-DD
+  const end = searchParams.get("end");     // YYYY-MM-DD
+
+  if (!start || !end) {
+    return new NextResponse("Missing start or end (YYYY-MM-DD)", { status: 400 });
   }
 
-  const fromD = new Date(from + "T00:00:00");
-  const toD = new Date(to + "T00:00:00");
+  // Use UTC midnight bounds
+  const startDate = new Date(start + "T00:00:00.000Z");
+  const endDateExclusive = new Date(end + "T00:00:00.000Z");
+  endDateExclusive.setUTCDate(endDateExclusive.getUTCDate() + 1);
 
   const rides = await prisma.ride.findMany({
     where: {
-      pickupTime: { gte: fromD, lt: new Date(toD.getTime() + 24 * 60 * 60 * 1000) },
-      assignedDriverId: { not: null },
-      status: { notIn: ["CANCELED"] },
+      pickupTime: { gte: startDate, lt: endDateExclusive },
+      // If you track completion, you can uncomment:
+      // status: "COMPLETED",
     },
-    include: { assignedDriver: true },
-    orderBy: { pickupTime: "asc" },
+    orderBy: [{ pickupTime: "asc" }],
+    select: {
+      id: true,
+      pickupTime: true,
+      passengerName: true,
+      pickupLocation: true,
+      dropoffLocation: true,
+      // safest: driverId exists even if there's no relation field
+      driverId: true,
+      // if you have payout fields:
+      // estimatedPriceCents: true,
+    },
   });
 
-  const byDriver = new Map<string, { driver: string; count: number }>();
+  // Payroll summary by driverId (fallback)
+  const byDriver = new Map<string, { rides: number }>();
+
   for (const r of rides) {
-    const name = r.assignedDriver?.name ?? "Unknown";
-    const key = r.assignedDriverId ?? "unknown";
-    const cur = byDriver.get(key) ?? { driver: name, count: 0 };
-    cur.count += 1;
+    const key = r.driverId ?? "UNASSIGNED";
+    const cur = byDriver.get(key) ?? { rides: 0 };
+    cur.rides += 1;
     byDriver.set(key, cur);
   }
 
-  const headers = ["driver", "ride_count", "range_from", "range_to"];
-  const rows = Array.from(byDriver.values()).map((v) => [v.driver, v.count, from, to]);
+  const header = ["driverId", "rides", "periodStart", "periodEnd"];
+  const rows = Array.from(byDriver.entries()).map(([driverId, v]) => [
+    driverId,
+    String(v.rides),
+    start,
+    end,
+  ]);
 
-  const csv = [headers.join(","), ...rows.map((row) => row.map(csvEscape).join(","))].join("\n");
+  const csv =
+    [header.join(","), ...rows.map((row) => row.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))].join("\n");
 
   return new NextResponse(csv, {
+    status: 200,
     headers: {
-      "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="payroll_${from}_to_${to}.csv"`,
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="payroll-${start}-to-${end}.csv"`,
     },
   });
 }
