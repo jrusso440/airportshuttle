@@ -1,69 +1,64 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
-import { parseYMD, ymd } from "@/lib/date";
-
-function csvEscape(v: any): string {
-  const s = String(v ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
 
 export async function GET(req: Request) {
-  const user = await requireUser(["ADMIN", "DISPATCHER"]);
-  if (!user) return NextResponse.redirect(new URL("/login", req.url));
+  // Avoid build-time Prisma evaluation
+  const { prisma } = await import("@/lib/db");
+  const { requireUser } = await import("@/lib/session");
 
-  const url = new URL(req.url);
-  const dateStr = url.searchParams.get("date") ?? ymd(new Date());
-  const date = parseYMD(dateStr);
+  const user = await requireUser(["ADMIN", "DISPATCHER"]); // protect export
+
+  const { searchParams } = new URL(req.url);
+  const dateStr = searchParams.get("date");
+
+  if (!dateStr) {
+    return new NextResponse("Missing date", { status: 400 });
+  }
+
+  // You might store date as a Date (00:00) — adjust if your schema differs
+  const date = new Date(dateStr + "T00:00:00.000Z");
 
   const rides = await prisma.ride.findMany({
     where: { date },
-    include: { assignedDriver: true, assignedVehicle: true },
-    orderBy: { pickupTime: "asc" },
+    orderBy: [{ pickupTime: "asc" }],
+    include: { driver: true },
   });
 
-  const headers = [
-    "pickup_time",
-    "passenger",
-    "phone",
-    "pickup",
-    "dropoff",
-    "airport",
-    "flight",
-    "party",
-    "luggage",
+  // Simple CSV export (works for printing/opening in Excel)
+  const header = [
+    "id",
+    "date",
+    "pickupTime",
+    "pickupLocation",
+    "dropoffLocation",
+    "passengerName",
+    "passengerPhone",
+    "passengerEmail",
+    "partySize",
     "status",
     "driver",
-    "vehicle",
-    "notes",
   ];
 
   const rows = rides.map((r) => [
+    r.id,
+    dateStr,
     new Date(r.pickupTime).toISOString(),
-    r.passengerName,
-    r.passengerPhone ?? "",
-    r.pickupLocation,
-    r.dropoffLocation,
-    r.airport ?? "",
-    r.flightNumber ?? "",
-    r.partySize,
-    r.luggageCount,
-    r.status,
-    r.assignedDriver?.name ?? "",
-    r.assignedVehicle?.label ?? "",
-    r.specialNotes ?? "",
+    (r.pickupLocation ?? "").replaceAll('"', '""'),
+    (r.dropoffLocation ?? "").replaceAll('"', '""'),
+    (r.passengerName ?? "").replaceAll('"', '""'),
+    (r.passengerPhone ?? "").replaceAll('"', '""'),
+    (r.passengerEmail ?? "").replaceAll('"', '""'),
+    String(r.partySize ?? ""),
+    String(r.status ?? ""),
+    (r.driver?.name ?? "").replaceAll('"', '""'),
   ]);
 
-  const csv = [
-    headers.join(","),
-    ...rows.map((row) => row.map(csvEscape).join(",")),
-  ].join("\n");
+  const csv = [header.join(","), ...rows.map((row) => row.map((v) => `"${v}"`).join(","))].join("\n");
 
   return new NextResponse(csv, {
+    status: 200,
     headers: {
-      "content-type": "text/csv; charset=utf-8",
-      "content-disposition": `attachment; filename="rides_${dateStr}.csv"`,
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="schedule-${dateStr}.csv"`,
     },
   });
 }
