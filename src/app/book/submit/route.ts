@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { parseYMD } from "@/lib/date";
 import { estimatePriceCents, formatDollars } from "@/lib/pricing";
-import { Resend } from "resend";
 
 function toLocalDateTime(dateStr: string, timeStr: string): Date {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -14,13 +12,17 @@ function toLocalDateTime(dateStr: string, timeStr: string): Date {
 }
 
 export async function POST(req: Request) {
+  // Dynamic imports prevent build-time “collect page data” failures
+  const { prisma } = await import("@/lib/db");
+  const { Resend } = await import("resend");
+
   const form = await req.formData();
 
-  const dateStr = String(form.get("date") ?? "");
-  const pickupTimeStr = String(form.get("pickupTime") ?? "");
-  const pickupLocation = String(form.get("pickupLocation") ?? "");
-  const dropoffLocation = String(form.get("dropoffLocation") ?? "");
-  const passengerName = String(form.get("passengerName") ?? "");
+  const dateStr = String(form.get("date") ?? "").trim();
+  const pickupTimeStr = String(form.get("pickupTime") ?? "").trim();
+  const pickupLocation = String(form.get("pickupLocation") ?? "").trim();
+  const dropoffLocation = String(form.get("dropoffLocation") ?? "").trim();
+  const passengerName = String(form.get("passengerName") ?? "").trim();
 
   if (!dateStr || !pickupTimeStr || !pickupLocation || !dropoffLocation || !passengerName) {
     return NextResponse.redirect(new URL("/book?err=missing", req.url));
@@ -37,9 +39,9 @@ export async function POST(req: Request) {
   const partySize = Number(form.get("partySize") ?? 1);
   const specialNotes = String(form.get("specialNotes") ?? "").trim() || null;
 
-  const partySizeSafe = Number.isFinite(partySize) ? partySize : 1;
+  const partySizeSafe = Number.isFinite(partySize) && partySize > 0 ? partySize : 1;
 
-  const estimatedPriceCents = estimatePriceCents({
+  const estimatedPriceCentsValue = estimatePriceCents({
     rideType,
     partySize: partySizeSafe,
     pickupTimeStr,
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
       rideType,
       specialNotes,
       status: "REQUESTED",
-      estimatedPriceCents,
+      estimatedPriceCents: estimatedPriceCentsValue,
     },
     select: { id: true },
   });
@@ -71,9 +73,10 @@ export async function POST(req: Request) {
   try {
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.BOOKING_FROM_EMAIL;
+
     if (apiKey && from) {
       const resend = new Resend(apiKey);
-      const dollars = formatDollars(estimatedPriceCents);
+      const dollars = formatDollars(estimatedPriceCentsValue);
       const baseUrl = process.env.PUBLIC_BASE_URL ?? "http://localhost:3000";
       const thanksUrl = `${baseUrl}/book/thanks/${created.id}`;
 
