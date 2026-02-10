@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { RideSchema } from "@/lib/validation";
 import { parseYMD } from "@/lib/date";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/session";
 
 function toLocalDateTime(dateStr: string, timeStr: string): Date {
   // dateStr: YYYY-MM-DD, timeStr: HH:MM
