@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SessionUser } from "@/lib/auth";
+import { SessionUser } from "@/lib/session";
 
 export function Nav({ user }: { user: SessionUser }) {
   return (
