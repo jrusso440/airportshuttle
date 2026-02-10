@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+export const dynamic = "force-dynamic";
 import { requireDriverUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
@@ -14,7 +14,9 @@ async function setStatus(rideId: string, status: string) {
 }
 
 export default async function DriverPage({ searchParams }: { searchParams: { date?: string } }) {
+	
   const user = await requireDriverUser();
+const { prisma } = await import("@/lib/db");
   if (!user) redirect("/");
 
   const dateStr = searchParams.date ?? ymd(new Date());
