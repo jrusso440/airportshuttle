@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui";
 import { formatDollars } from "@/lib/pricing";
 import Link from "next/link";
-
+export const dynamic = "force-dynamic";
 export default async function ThanksPage({ params }: { params: { rideId: string } }) {
   const ride = await prisma.ride.findUnique({ where: { id: params.rideId } });
 
