@@ -11,7 +11,7 @@ export default function LoginPage({ searchParams }: { searchParams: { err?: stri
         </div>
 
         <Card title="Login">
-          <form className="space-y-3" action="/auth/login" method="post">
+          <form className="space-y-3" action="/session/login" method="post">
             <div>
               <label className="text-xs font-medium text-gray-700">Email</label>
               <Input name="email" type="email" required placeholder="admin@example.com" />

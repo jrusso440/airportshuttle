@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/lib/session";
 import { Nav } from "@/components/Nav";
 import { Card, LinkButton, Select, Button } from "@/components/ui";
 import { parseYMD, ymd, formatTime } from "@/lib/date";
