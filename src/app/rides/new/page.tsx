@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 import { requireUser } from "@/lib/session";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/Nav";
