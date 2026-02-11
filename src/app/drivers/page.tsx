@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { redirect } from "next/navigation";
@@ -6,9 +9,13 @@ import { Card, Input, Button } from "@/components/ui";
 
 async function createDriver(formData: FormData) {
   "use server";
+  const user = await requireUser(["ADMIN", "DISPATCHER"]);
+  if (!user) redirect("/");
+
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
   if (!name) return;
+
   await prisma.driver.create({ data: { name, phone: phone || null } });
   redirect("/drivers");
 }
