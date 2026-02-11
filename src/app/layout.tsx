@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import "./globals.css";
 import type { Metadata } from "next";
 

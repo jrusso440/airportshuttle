@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const runtime = "nodejs";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { parseYMD, ymd, formatTime } from "@/lib/date";
